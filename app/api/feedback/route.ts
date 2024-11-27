@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
 import path from 'path';
+import fs from 'fs';
 
 export async function POST(request: Request) {
   try {
@@ -12,7 +12,8 @@ export async function POST(request: Request) {
     fs.appendFileSync(filePath, feedbackEntry);
     
     return NextResponse.json({ message: 'Feedback saved successfully' });
-  } catch (error) {
+  } catch (err) {
+    console.error('Error saving feedback:', err);
     return NextResponse.json({ error: 'Failed to save feedback' }, { status: 500 });
   }
 }
