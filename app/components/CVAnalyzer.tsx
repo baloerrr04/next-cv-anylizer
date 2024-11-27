@@ -1,12 +1,36 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Toaster, toast } from "react-hot-toast";
+import LoadingAnimation from "./LoadingAnimation";
+import ATSPercentage from "./ATSPercentage";
+import Accordion from "./Accordion";
+import { Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+
+interface AnalysisResponse {
+  ATS_Score: number;
+  Strengths: string[];
+  Weaknesses: string[];
+  Suggestions: string[];
+  ATS_Friendly: boolean;
+}
+
+interface AnalysisResult {
+  percentage: number;
+  sections: {
+    strengths: string[];
+    improvements: string[];
+    recommendations: string[];
+    conclusion: string;
+  };
+}
 
 export default function CVAnalyzer() {
   const [mounted, setMounted] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  const [result, setResult] = useState<string | null>(null);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
   const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => {
@@ -15,6 +39,17 @@ export default function CVAnalyzer() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
+    handleFileSelection(selectedFile);
+  };
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const droppedFile = e.dataTransfer.files[0];
+    handleFileSelection(droppedFile);
+  }, []);
+
+  const handleFileSelection = (selectedFile: File | undefined) => {
     if (selectedFile) {
       if (selectedFile.type !== 'application/pdf') {
         toast.error('Please upload a PDF file');
@@ -25,6 +60,11 @@ export default function CVAnalyzer() {
     }
   };
 
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
   const handleAnalyze = async () => {
     if (!file) {
       toast.error('Please select a file first');
@@ -33,13 +73,36 @@ export default function CVAnalyzer() {
 
     try {
       setAnalyzing(true);
-      // TODO: Implement actual CV analysis logic here
+      
       const formData = new FormData();
       formData.append('cv', file);
 
-      // Simulate analysis for now
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setResult('Sample analysis result. Replace this with actual analysis.');
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to analyze CV');
+      }
+
+      const data = await response.json();
+      console.log('API Response:', data);
+
+      const analysisData = data.analysis as AnalysisResponse;
+      
+      setResult({
+        percentage: analysisData.ATS_Score || 0,
+        sections: {
+          strengths: analysisData.Strengths || [],
+          improvements: analysisData.Weaknesses || [],
+          recommendations: analysisData.Suggestions || [],
+          conclusion: analysisData.ATS_Friendly 
+            ? "Your CV is ATS-friendly! Keep up the good work and continue to tailor it for specific job applications."
+            : "Your CV needs some improvements to be more ATS-friendly. Follow the suggestions above to increase your chances of passing ATS systems."
+        }
+      });
+      
       toast.success('Analysis completed successfully!');
     } catch (error) {
       toast.error('Error analyzing CV. Please try again.');
@@ -54,52 +117,106 @@ export default function CVAnalyzer() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto p-6 pt-24">
       <Toaster position="top-right" />
       
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-heading text-text mb-2 tracking-tight">
           CV Analyzer
         </h1>
-        <p className="mt-3 text-lg text-gray-500">
+        <p className="text-lg text-text font-base">
           Upload your CV in PDF format for instant analysis
         </p>
       </div>
 
-      <div className="mt-10">
-        <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-gray-300 rounded-lg">
-          <input
-            type="file"
-            accept=".pdf"
-            onChange={handleFileChange}
-            className="block w-full text-sm text-gray-500
-              file:mr-4 file:py-2 file:px-4
-              file:rounded-full file:border-0
-              file:text-sm file:font-semibold
-              file:bg-blue-50 file:text-blue-700
-              hover:file:bg-blue-100"
-          />
-          {file && (
-            <p className="mt-2 text-sm text-gray-500">
-              Selected file: {file.name}
-            </p>
-          )}
+      <Card className="border-2 border-border shadow-light">
+        <CardContent className="p-6">
+          <div
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            className="flex flex-col items-center justify-center p-8 border-2 border-border border-dashed rounded-base bg-bg  transition-colors duration-200 cursor-pointer"
+          >
+            <div className="flex flex-col items-center text-center">
+              <Upload className="h-12 w-12 text-text mb-4" />
+              <div className="space-y-2">
+                <p className="text-xl font-heading text-text">
+                  {file ? file.name : "Drop your CV here"}
+                </p>
+                <p className="text-base text-text font-base">
+                  {file ? (
+                    "File selected"
+                  ) : (
+                    <>
+                      Drag and drop your CV, or{" "}
+                      <label className="text-text hover:text-mainAccent cursor-pointer font-heading underline">
+                        browse
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                      </label>
+                    </>
+                  )}
+                </p>
+                <p className="text-sm text-text/80 font-base">PDF files only, up to 10MB</p>
+              </div>
+            </div>
+          </div>
+
+          <Button
+            onClick={handleAnalyze}
+            disabled={analyzing || !file}
+            className={`mt-6 w-full h-12 text-base font-heading border-2 border-border rounded-base font-bold
+              ${analyzing || !file
+                ? 'bg-gray-300 cursor-not-allowed'
+                : 'bg-main hover:bg-main text-text shadow-light hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-none'
+              } transition-all`}
+          >
+            {analyzing ? 'Analyzing...' : 'Analyze CV'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {analyzing && (
+        <div className="mt-8">
+          <LoadingAnimation />
         </div>
+      )}
 
-        <button
-          onClick={handleAnalyze}
-          disabled={analyzing || !file}
-          className="mt-6 w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-        >
-          {analyzing ? 'Analyzing...' : 'Analyze CV'}
-        </button>
-      </div>
+      {result && result.sections && (
+        <div className="mt-8 space-y-6">
+          <ATSPercentage percentage={result.percentage} />
+          
+          <div className="space-y-4">
+            <Accordion title="Strengths" defaultOpen>
+              <ul className="list-disc pl-5 space-y-2 text-text font-base">
+                {result.sections.strengths?.map((strength, index) => (
+                  <li key={index}>{strength}</li>
+                ))}
+              </ul>
+            </Accordion>
 
-      {result && (
-        <div className="mt-8 p-6 bg-white rounded-lg shadow">
-          <h2 className="text-lg font-medium text-gray-900">Analysis Results</h2>
-          <div className="mt-4 text-sm text-gray-500 whitespace-pre-wrap">
-            {result}
+            <Accordion title="Areas for Improvement">
+              <ul className="list-disc pl-5 space-y-2 text-text font-base">
+                {result.sections.improvements?.map((improvement, index) => (
+                  <li key={index}>{improvement}</li>
+                ))}
+              </ul>
+            </Accordion>
+
+            <Accordion title="Recommendations">
+              <ul className="list-disc pl-5 space-y-2 text-text font-base">
+                {result.sections.recommendations?.map((recommendation, index) => (
+                  <li key={index}>{recommendation}</li>
+                ))}
+              </ul>
+            </Accordion>
+
+            <Accordion title="Conclusion">
+              <p className="text-text font-base">{result.sections.conclusion}</p>
+            </Accordion>
           </div>
         </div>
       )}
