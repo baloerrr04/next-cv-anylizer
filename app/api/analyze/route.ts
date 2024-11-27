@@ -43,7 +43,7 @@ Catatan:
 - ATS_Friendly berisi true jika skor di atas 80, false jika di bawah 80
 - jika yang diinput bukan format cv maka berikan respon "Invalid CV format"
 
-Berikan respon dalam format JSON yang valid tanpa komentar atau teks tambahan menggunakan bahasa inggris.`;
+Berikan respon hanya dalam format JSON yang valid tanpa komentar atau teks tambahan menggunakan bahasa inggris.`;
 
 export async function POST(req: Request) {
   try {
@@ -77,23 +77,33 @@ export async function POST(req: Request) {
 
     const response = await result.response;
     const text = response.text();
-    console.log('Raw response:', text);
+    
+    // Clean the response text
+    const cleanText = text
+      .replace(/```json\n?|\n?```/g, '') // Remove markdown code blocks
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+      .trim();
 
-    // Parse the text as JSON
     try {
-      const analysis = JSON.parse(text.replace(/```json\n|\n```/g, ''));
+      const analysis = JSON.parse(cleanText);
+      
+      // Validate the response structure
+      if (!analysis.ATS_Score || !Array.isArray(analysis.Strengths) || !Array.isArray(analysis.Weaknesses) || !Array.isArray(analysis.Suggestions)) {
+        throw new Error('Invalid response structure');
+      }
+      
       return NextResponse.json({ analysis });
     } catch (parseError) {
-      console.error('Error parsing JSON:', parseError);
+      console.error('Error parsing JSON:', parseError, 'Raw text:', cleanText);
       return NextResponse.json(
-        { error: 'Invalid response format' },
+        { error: 'Failed to parse analysis results' },
         { status: 500 }
       );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error analyzing CV:', error);
     return NextResponse.json(
-      { error: 'Error analyzing CV' },
+      { error: error.message || 'Error analyzing CV' },
       { status: 500 }
     );
   }

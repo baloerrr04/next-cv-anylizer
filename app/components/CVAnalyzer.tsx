@@ -112,6 +112,18 @@ export default function CVAnalyzer() {
     }
   };
 
+  const resetForm = () => {
+    setFile(null);
+    setResult(null);
+    setAnalyzing(false);
+    
+    // Reset file input
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.value = '';
+    }
+  };
+
   if (!mounted) {
     return null;
   }
@@ -225,6 +237,15 @@ export default function CVAnalyzer() {
             <Accordion title="Conclusion">
               <p className="text-text font-base">{result.sections.conclusion}</p>
             </Accordion>
+          </div>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-heading">Analysis Results</h2>
+            <button
+              onClick={resetForm}
+              className="px-4 py-2 bg-[#FF3B30] text-white rounded-md hover:opacity-90 transition-opacity font-heading text-sm border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+            >
+              Analyze Another CV
+            </button>
           </div>
         </div>
       )}
