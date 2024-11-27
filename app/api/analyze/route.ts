@@ -100,10 +100,10 @@ export async function POST(req: Request) {
         { status: 500 }
       );
     }
-  } catch (error: any) {
-    console.error('Error analyzing CV:', error);
+  } catch (err) {
+    console.error('Error analyzing CV:', err);
     return NextResponse.json(
-      { error: error.message || 'Error analyzing CV' },
+      { error: err || 'Error analyzing CV' },
       { status: 500 }
     );
   }
