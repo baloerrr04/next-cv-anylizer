@@ -121,18 +121,18 @@ export default function CVAnalyzer() {
       <Toaster position="top-right" />
       
       <div className="text-center mb-8">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center justify-center gap-4">
           <h1 className="text-4xl font-heading text-text tracking-tight">
             CV Analyzer 
           </h1>
+        {/* <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-10">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375a9 9 0 0 1 9 9v.375M10.125 2.25A3.375 3.375 0 0 1 13.5 5.625v1.5c0 .621.504 1.125 1.125 1.125h1.5a3.375 3.375 0 0 1 3.375 3.375M9 15l2.25 2.25L15 12" />
+        </svg> */}
           <span className="bg-[#FF3B30] text-white px-2 py-0.5 text-sm font-bold rounded-md transform -rotate-6 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
             BETA
           </span>
         </div>
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-10">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M10.125 2.25h-4.5c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125v-9M10.125 2.25h.375a9 9 0 0 1 9 9v.375M10.125 2.25A3.375 3.375 0 0 1 13.5 5.625v1.5c0 .621.504 1.125 1.125 1.125h1.5a3.375 3.375 0 0 1 3.375 3.375M9 15l2.25 2.25L15 12" />
-        </svg>
-        <p className="text-lg text-text font-base">
+        <p className="text-lg text-text font-base mt-2">
           Upload your CV in PDF format for instant analysis
         </p>
       </div>
