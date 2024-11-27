@@ -1,6 +1,3 @@
-import { Github, Twitter } from "lucide-react";
-import Link from "next/link";
-
 export default function Footer() {
   return (
     <footer className="w-full border-t-2 border-border bg-bg py-6 mt-12">
