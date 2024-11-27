@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     fs.appendFileSync(filePath, feedbackEntry);
     
     return NextResponse.json({ message: 'Feedback saved successfully' });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to save feedback' }, { status: 500 });
+  } catch (error: any) {
+    return NextResponse.json({ error:  error.message }, { status: 500 });
   }
 }
