@@ -122,7 +122,7 @@ export default function CVAnalyzer() {
       
       <div className="text-center mb-8">
         <div className="flex items-center justify-center gap-4">
-          <h1 className="text-4xl font-heading text-text tracking-tight">
+          <h1 className="text-3xl md:text-4xl font-heading text-text tracking-tight">
             CV Analyzer 
           </h1>
         {/* <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-10">
