@@ -58,14 +58,8 @@ async function retryWithBackoff<T>(
 ): Promise<T> {
   try {
     return await fn();
-  } catch (error: any) {
+  } catch (error) {
     if (retries === 0) throw error;
-
-    const isRetryable = error.status === 500 || 
-                       error.message?.includes('temporarily unavailable') ||
-                       error.message?.includes('rate limit');
-
-    if (!isRetryable) throw error;
 
     await new Promise(resolve => setTimeout(resolve, backoff));
     
