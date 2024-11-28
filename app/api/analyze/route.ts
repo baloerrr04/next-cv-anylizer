@@ -1,6 +1,11 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 
+interface AIError {
+  status?: number;
+  message?: string;
+}
+
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!);
 
 const systemPrompt = `Panduan Penulisan CV yang Baik untuk Sistem ATS
@@ -125,20 +130,21 @@ export async function POST(req: Request) {
         { status: 500 }
       );
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error analyzing CV:', err);
     
-    // More specific error messages based on the error type
+    const error = err as AIError;
+    
     let errorMessage = 'Error analyzing CV. Please try again later.';
-    if (err.status === 500) {
+    if (error.status === 500) {
       errorMessage = 'The AI service is temporarily unavailable. Please try again in a few moments.';
-    } else if (err.message?.includes('rate limit')) {
+    } else if (error.message?.includes('rate limit')) {
       errorMessage = 'Too many requests. Please wait a moment before trying again.';
     }
     
     return NextResponse.json(
       { error: errorMessage },
-      { status: err.status || 500 }
+      { status: error.status || 500 }
     );
   }
 }
