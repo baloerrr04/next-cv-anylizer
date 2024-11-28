@@ -45,6 +45,29 @@ Catatan:
 
 Berikan respon hanya dalam format JSON yang valid tanpa komentar atau teks tambahan menggunakan bahasa inggris.`;
 
+// Retry function with exponential backoff
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  retries = 3,
+  backoff = 1000,
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: any) {
+    if (retries === 0) throw error;
+
+    const isRetryable = error.status === 500 || 
+                       error.message?.includes('temporarily unavailable') ||
+                       error.message?.includes('rate limit');
+
+    if (!isRetryable) throw error;
+
+    await new Promise(resolve => setTimeout(resolve, backoff));
+    
+    return retryWithBackoff(fn, retries - 1, backoff * 2);
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
@@ -64,30 +87,32 @@ export async function POST(req: Request) {
     // Initialize the model
     const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
 
-    // Analyze the CV
-    const result = await model.generateContent([
-      {
-        inlineData: {
-          mimeType: file.type,
-          data: base64Data
-        }
-      },
-      systemPrompt
-    ]);
+    // Analyze the CV with retry logic
+    const result = await retryWithBackoff(async () => {
+      const response = await model.generateContent([
+        {
+          inlineData: {
+            mimeType: file.type,
+            data: base64Data
+          }
+        },
+        systemPrompt
+      ]);
+      return response;
+    });
 
     const response = await result.response;
     const text = response.text();
     
     // Clean the response text
     const cleanText = text
-      .replace(/```json\n?|\n?```/g, '') // Remove markdown code blocks
-      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+      .replace(/```json\n?|\n?```/g, '')
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
       .trim();
 
     try {
       const analysis = JSON.parse(cleanText);
       
-      // Validate the response structure
       if (!analysis.ATS_Score || !Array.isArray(analysis.Strengths) || !Array.isArray(analysis.Weaknesses) || !Array.isArray(analysis.Suggestions)) {
         throw new Error('Invalid response structure');
       }
@@ -96,15 +121,24 @@ export async function POST(req: Request) {
     } catch (parseError) {
       console.error('Error parsing JSON:', parseError, 'Raw text:', cleanText);
       return NextResponse.json(
-        { error: 'Failed to parse analysis results' },
+        { error: 'Failed to parse analysis results. Please try again.' },
         { status: 500 }
       );
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error('Error analyzing CV:', err);
+    
+    // More specific error messages based on the error type
+    let errorMessage = 'Error analyzing CV. Please try again later.';
+    if (err.status === 500) {
+      errorMessage = 'The AI service is temporarily unavailable. Please try again in a few moments.';
+    } else if (err.message?.includes('rate limit')) {
+      errorMessage = 'Too many requests. Please wait a moment before trying again.';
+    }
+    
     return NextResponse.json(
-      { error: err || 'Error analyzing CV' },
-      { status: 500 }
+      { error: errorMessage },
+      { status: err.status || 500 }
     );
   }
 }
