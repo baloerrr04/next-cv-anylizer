@@ -85,7 +85,7 @@ export async function POST(req: Request) {
     const base64Data = Buffer.from(buffer).toString('base64');
 
     // Initialize the model
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
     // Analyze the CV with retry logic
     const result = await retryWithBackoff(async () => {
